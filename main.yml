@@ -1,0 +1,77 @@
+---
+tasks:
+  - name: update apt
+    apt:
+      update_cache: true
+
+  - name: install packages
+    apt:
+      name: "{{ apt_packages }}"
+
+  - name: install pip packages
+    pip:
+      requirements: /vagrant/provision/files/requirements.txt
+
+  - name: extract terraform
+    unarchive:
+      remote_src: true
+      src: https://releases.hashicorp.com/terraform/0.11.11/terraform_0.11.11_linux_amd64.zip
+      dest: /usr/local/bin
+      mode: 0755
+      owner: vagrant
+      group: vagrant
+
+  - name: create aws directory
+    file:
+      dest: "{{ install_dir }}"
+      state: directory
+      mode: 0755
+      owner: vagrant
+      group: vagrant
+
+  - name: install AWS credentials
+    template:
+      src: templates/credentials.j2
+      dest: "{{ install_dir }}/credentials"
+      mode: 0600
+      owner: vagrant
+      group: vagrant
+
+  - name: install dynamic inventory script
+    copy:
+      src: files/ec2.py
+      dest: "{{ install_dir }}/ec2.py"
+      mode: 0755
+      owner: vagrant
+      group: vagrant
+
+  - name: install inventory file
+    copy:
+      src: files/ec2.ini
+      dest: "{{ install_dir }}/ec2.ini"
+      mode: 0644
+      owner: vagrant
+      group: vagrant
+
+  - name: init shell variables
+    lineinfile:
+      path: /home/vagrant/.bashrc
+      state: present
+      line: "{{ item }}"
+      regexp: "{{ item }}"
+    with_items:
+      - "export EC2_INI_PATH={{ install_dir }}/ec2.ini"
+      - "export ANSIBLE_INVENTORY={{ install_dir }}/ec2.py"
+      - "export AWS_PROFILE=terraform"
+      - "export ANSIBLE_REMOTE_USER=centos"
+      - "export ANSIBLE_HOST_KEY_CHECKING=False"
+      - "export ANSIBLE_DIFF_ALWAYS=True"
+      - "export BOTO_USE_ENDPOINT_HEURISTICS=True"
+
+  ### terraform repo
+
+  - name: terraform repo checkout
+    git:
+      repo: "https://wojciech-puchta@bitbucket.org/cassinihuygens/aws-controller.git"
+      dest: /home/vagrant/terraform
+      version: master

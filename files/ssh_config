@@ -1,0 +1,4 @@
+Host 
+
+Host bitbucket.org
+    IdentityFile ~/.ssh/bitbucket-checkout
